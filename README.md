@@ -1,6 +1,6 @@
 # Piper
 
-**Piper** is an AI-powered research platform combining two systems: a **multi-agent extraction pipeline** that automatically extracts structured reaction and conditions data from chemistry publications, and a **RAG research assistant** for scientific literature.
+**Piper** is an AI-powered research platform combining two systems: a **multi-agent extraction pipeline** that automatically extracts structured reaction and conditions data from chemistry publications, and a **knowledge-graph-augmented RAG research assistant** for scientific literature.
 
 > **Note:** The full codebase will be made publicly available shortly after the associated publication. This repository serves as a preview of the system architecture and capabilities.
 
@@ -23,7 +23,7 @@
 | Component | What it does |
 |---|---|
 | **Piper Multi-Agent** | Automated extraction of reaction conditions, SMILES, catalysts, and substrates from PDF chemistry articles |
-| **Piper RAG** | Answers research questions across your Zotero library (updates will be made in future for various import sources) using semantic retrieval and LLM synthesis |
+| **Piper RAG** | Answers research questions across your literature library using hybrid semantic and knowledge-graph retrieval with LLM synthesis |
 
 Both components share a unified Streamlit interface and are configurable through `context.json`.
 
@@ -46,18 +46,22 @@ Piper Multi-Agent processes a chemistry PDF end-to-end and produces structured J
 
 The pipeline takes a PDF as input and coordinates a team of specialised agents — each responsible for a single task — to parse, classify, resolve, and extract chemistry data. Cheap deterministic tools (optical chemical structure recognition, PubChem) run first; LLM agents handle only the cases those tools cannot resolve. This keeps costs low while maintaining accuracy across a wide range of paper formats.
 
+The structured output also feeds a chemistry **knowledge graph** of reactions, compounds, conditions, and source papers, which the research assistant draws on for retrieval.
+
 ---
 
 ## Piper RAG — Research Assistant
 
-A retrieval-augmented generation assistant connected to your Zotero library.
+A retrieval-augmented generation assistant connected to your literature library, combining semantic search with a chemistry knowledge graph.
 
 ### Features
 
-- **Zotero integration** — syncs bibliographic metadata from `zotero.sqlite`
+- **Multimodal embeddings** — text, figures, and documents represented in a single vector space
+- **Knowledge-graph retrieval** — reactions, compounds, conditions, and papers linked as a graph for relationship-aware search
+- **Hybrid retrieval with fusion** — combines semantic (vector) search and graph-based search, merging the two ranked lists into one
 - **Semantic chunking** — heading-based splits; tables kept atomic
 - **Multi-path query engine** — routes to the right retrieval strategy per query type
-- **Dynamic retrieval** — adjusts retrieved chunk count based on relevance drop-off
+- **Dynamic retrieval** — adjusts retrieved context based on relevance drop-off
 - **Summarize-then-synthesize** — per-chunk summaries merged into one final answer
 
 ### Query types
@@ -68,6 +72,7 @@ A retrieval-augmented generation assistant connected to your Zotero library.
 | `filtered_query` | "What did Smith et al. report about Ir catalysts in 2022?" |
 | `list_query` | "List all papers on nickel catalysis published after 2020" |
 | `structured_extraction_query` | "What yields were reported for C–N coupling reactions?" |
+| `relationship_query` | "Which catalysts have been used with K2CO3 as base?" |
 
 ---
 
@@ -101,8 +106,7 @@ cp context_template.json context.json
 ```json
 {
   "openrouter_api_key": "your_openrouter_api_key",
-  "folder_path": "/path/to/zotero/storage",
-  "zotero_db_path": "/path/to/zotero.sqlite",
+  "folder_path": "/path/to/document/library",
   "model": {
     "default": "openai/gpt-4o-mini"
   }
@@ -123,7 +127,7 @@ streamlit run app.py
 
 The UI provides:
 - **Extraction tab** — upload a PDF, configure models, run extraction, inspect results
-- **Piper RAG tab** — ask questions across your Zotero library
+- **Piper RAG tab** — ask questions across your literature library
 - **Token tracker** — live cost and token usage breakdown
 
 ### Command line (RAG only)
